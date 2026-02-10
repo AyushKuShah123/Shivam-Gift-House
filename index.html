@@ -125,17 +125,18 @@ input,select,button{
 <div class="footer">
   <h3>About</h3>
   <p id="about">Best Gift and Decoration shop in town.</p>
-  <h3>Contact</h3>
-  <p id="phone1">+977-9847256046</p>
-  <p id="phone2">+977-9867380880</p>
-  <p id="location">
-  <a href="https://www.google.com/maps/@27.5547496,83.7906477,20.39z?entry=ttu"
-     target="_blank"
-     style="color:white;text-decoration:underline;">
-     📍 Bardaghat-4, NawalParasi West (View Map)
-  </a>
-</p>
 
+  <h3>Contact</h3>
+  <p>+977-9847256046</p>
+  <p>+977-9867380880</p>
+
+  <p>
+    <a href="https://www.google.com/maps/@27.5547496,83.7906477,20.39z?entry=ttu"
+       target="_blank"
+       style="color:white;text-decoration:underline;">
+       📍 Bardaghat-4, NawalParasi West (View Map)
+    </a>
+  </p>
 </div>
 
 <!-- ADMIN PANEL -->
@@ -160,7 +161,6 @@ input,select,button{
 
 <script>
 const PRODUCT_API="https://script.google.com/macros/s/AKfycbypjTfCgXFVyqlZh3xSkOt4WsyYuoWwcwpLKUpku1a3NWlGsTIK-4pFCk9Nz_Q6FhwM/exec";
-const SETTINGS_API=PRODUCT_API;
 
 const ADMIN_USER="Admin";
 const ADMIN_PASS="12345678";
@@ -171,49 +171,45 @@ let settings={};
 const productsDiv=document.getElementById("products");
 const banner=document.getElementById("banner");
 const about=document.getElementById("about");
-const phone=document.getElementById("phone");
-const locationEl=document.getElementById("location");
 
+// Load products
 function loadProducts(){
   fetch(PRODUCT_API+"?sheet=products")
     .then(r=>r.json())
     .then(d=>{
       products=d;
       show(products);
-    });
+    })
+    .catch(()=>alert("Failed to load products"));
 }
 
+// Load settings
 function loadSettings(){
-  fetch(SETTINGS_API+"?sheet=settings")
+  fetch(PRODUCT_API+"?sheet=settings")
     .then(r=>r.json())
     .then(s=>{
-      settings=s[0] || {};
-      banner.innerText=settings.banner || "Festival Offer!";
-      about.innerText=settings.about || "";
-      phone.innerText=settings.phone || "";
-      locationEl.innerText=settings.location || "";
+      settings=s[0]||{};
+      banner.innerText=settings.banner||"Festival Offer!";
+      about.innerText=settings.about||"";
     });
 }
 
+// Show products
 function show(list){
   productsDiv.innerHTML="";
   list.forEach(p=>{
-    let orderBtn = (settings.online=="yes") 
-      ? `<a href="https://wa.me/${settings.phone}?text=I want ${p.name}" target="_blank">
-         <button>Order</button></a>` 
-      : "";
-
     productsDiv.innerHTML+=`
       <div class="card">
         <img src="${p.image}">
         <h3>${p.name}</h3>
         <p>${p.description}</p>
-        <b>₹${p.price}</b><br>${orderBtn}
+        <b>₹${p.price}</b>
       </div>
     `;
   });
 }
 
+// Search filter
 document.getElementById("search").oninput=filter;
 document.getElementById("catFilter").onchange=filter;
 
@@ -225,38 +221,31 @@ function filter(){
     (p.name||"").toLowerCase().includes(t) &&
     (c==""||p.category==c)
   );
-
   show(f);
 }
 
+// Theme
 function toggleTheme(){
   document.body.classList.toggle("dark");
 }
 
-/* ✅ ADMIN PANEL FIX */
+// Admin visibility
 function checkAdmin(){
-  const panel=document.getElementById("adminPanel");
-  if(window.location.hash==="#admin"){
-    panel.style.display="block";
-  }else{
-    panel.style.display="none";
-  }
+  document.getElementById("adminPanel").style.display =
+    window.location.hash==="#admin" ? "block" : "none";
 }
 checkAdmin();
 window.addEventListener("hashchange",checkAdmin);
 
+// Login
 function login(){
-  const u=document.getElementById("user").value;
-  const p=document.getElementById("pass").value;
-
-  if(u===ADMIN_USER && p===ADMIN_PASS){
-    document.getElementById("adminArea").style.display="block";
+  if(user.value===ADMIN_USER && pass.value===ADMIN_PASS){
+    adminArea.style.display="block";
     alert("Login success");
-  }else{
-    alert("Wrong login");
-  }
+  }else alert("Wrong login");
 }
 
+// Add product (FIXED — no headers)
 function addProduct(){
   const newProduct={
     name:aname.value,
@@ -268,20 +257,15 @@ function addProduct(){
 
   fetch(PRODUCT_API+"?sheet=products",{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
     body:JSON.stringify(newProduct)
   })
   .then(r=>r.json())
   .then(()=>{
     alert("Product added!");
-    aname.value="";
-    aprice.value="";
-    aimg.value="";
-    adesc.value="";
-    acat.value="";
+    aname.value=aprice.value=aimg.value=adesc.value=acat.value="";
     loadProducts();
   })
-  .catch(err=>alert("Network error"));
+  .catch(err=>alert("Network error: "+err));
 }
 
 function refreshProducts(){
