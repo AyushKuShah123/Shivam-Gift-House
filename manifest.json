@@ -1,0 +1,8 @@
+{
+"name":"Shivam Gift House Admin",
+"short_name":"Gift Admin",
+"start_url":"/#admin",
+"display":"standalone",
+"background_color":"#000",
+"theme_color":"#ff4d6d"
+}
