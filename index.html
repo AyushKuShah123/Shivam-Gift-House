@@ -133,6 +133,7 @@ input,select,button{
 <!-- ADMIN PANEL -->
 <div class="admin" id="adminPanel">
   <h2>Admin Panel</h2>
+
   <input id="user" placeholder="Username">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
@@ -145,13 +146,13 @@ input,select,button{
     <input id="adesc" placeholder="Description">
     <input id="acat" placeholder="Category">
     <button onclick="addProduct()">Add Product</button>
-    <button onclick="refreshProducts()">Refresh Products</button>
+    <button onclick="refreshProducts()">Refresh</button>
   </div>
 </div>
 
 <script>
 const PRODUCT_API="https://script.google.com/macros/s/AKfycbypjTfCgXFVyqlZh3xSkOt4WsyYuoWwcwpLKUpku1a3NWlGsTIK-4pFCk9Nz_Q6FhwM/exec";
-const SETTINGS_API="https://script.google.com/macros/s/AKfycbypjTfCgXFVyqlZh3xSkOt4WsyYuoWwcwpLKUpku1a3NWlGsTIK-4pFCk9Nz_Q6FhwM/exec";
+const SETTINGS_API=PRODUCT_API;
 
 const ADMIN_USER="admin";
 const ADMIN_PASS="1234";
@@ -165,7 +166,6 @@ const about=document.getElementById("about");
 const phone=document.getElementById("phone");
 const locationEl=document.getElementById("location");
 
-// Load products from sheet
 function loadProducts(){
   fetch(PRODUCT_API+"?sheet=products")
     .then(r=>r.json())
@@ -175,20 +175,18 @@ function loadProducts(){
     });
 }
 
-// Load settings from sheet
 function loadSettings(){
   fetch(SETTINGS_API+"?sheet=settings")
     .then(r=>r.json())
     .then(s=>{
-      settings=s[0] || {banner:"Festival Offer!", about:"Best gift shop", phone:"", location:"", online:"no"};
-      banner.innerText=settings.banner;
-      about.innerText=settings.about;
-      phone.innerText=settings.phone;
-      locationEl.innerText=settings.location;
+      settings=s[0] || {};
+      banner.innerText=settings.banner || "Festival Offer!";
+      about.innerText=settings.about || "";
+      phone.innerText=settings.phone || "";
+      locationEl.innerText=settings.location || "";
     });
 }
 
-// Display products
 function show(list){
   productsDiv.innerHTML="";
   list.forEach(p=>{
@@ -196,9 +194,10 @@ function show(list){
       ? `<a href="https://wa.me/${settings.phone}?text=I want ${p.name}" target="_blank">
          <button>Order</button></a>` 
       : "";
+
     productsDiv.innerHTML+=`
       <div class="card">
-        <img src="${p.image}" alt="${p.name}">
+        <img src="${p.image}">
         <h3>${p.name}</h3>
         <p>${p.description}</p>
         <b>₹${p.price}</b><br>${orderBtn}
@@ -207,81 +206,83 @@ function show(list){
   });
 }
 
-// Search & category filter
 document.getElementById("search").oninput=filter;
 document.getElementById("catFilter").onchange=filter;
+
 function filter(){
   let t=document.getElementById("search").value.toLowerCase();
   let c=document.getElementById("catFilter").value;
+
   let f=products.filter(p=>
-    p.name.toLowerCase().includes(t) &&
+    (p.name||"").toLowerCase().includes(t) &&
     (c==""||p.category==c)
   );
+
   show(f);
 }
 
-// Dark theme toggle
 function toggleTheme(){
   document.body.classList.toggle("dark");
 }
 
-// Admin panel
-if(location.hash=="#admin") document.getElementById("adminPanel").style.display="block";
+/* ✅ ADMIN PANEL FIX */
+function checkAdmin(){
+  const panel=document.getElementById("adminPanel");
+  if(window.location.hash==="#admin"){
+    panel.style.display="block";
+  }else{
+    panel.style.display="none";
+  }
+}
+checkAdmin();
+window.addEventListener("hashchange",checkAdmin);
 
 function login(){
   const u=document.getElementById("user").value;
   const p=document.getElementById("pass").value;
+
   if(u===ADMIN_USER && p===ADMIN_PASS){
     document.getElementById("adminArea").style.display="block";
     alert("Login success");
   }else{
-    alert("Wrong username or password");
+    alert("Wrong login");
   }
 }
 
-// Add product
 function addProduct(){
-  const newProduct = {
-    name: document.getElementById("aname").value,
-    price: document.getElementById("aprice").value,
-    image: document.getElementById("aimg").value,
-    description: document.getElementById("adesc").value,
-    category: document.getElementById("acat").value
+  const newProduct={
+    name:aname.value,
+    price:aprice.value,
+    image:aimg.value,
+    description:adesc.value,
+    category:acat.value
   };
 
-  fetch(PRODUCT_API+"?sheet=products", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(newProduct)
+  fetch(PRODUCT_API+"?sheet=products",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(newProduct)
   })
-  .then(res => res.json())
-  .then(data => {
-    if(data.status==="success"){
-      alert("Product added successfully!");
-      // Clear input fields
-      document.getElementById("aname").value="";
-      document.getElementById("aprice").value="";
-      document.getElementById("aimg").value="";
-      document.getElementById("adesc").value="";
-      document.getElementById("acat").value="";
-      loadProducts();
-    } else {
-      alert("Error: "+data.message);
-    }
+  .then(r=>r.json())
+  .then(()=>{
+    alert("Product added!");
+    aname.value="";
+    aprice.value="";
+    aimg.value="";
+    adesc.value="";
+    acat.value="";
+    loadProducts();
   })
-  .catch(err => alert("Network error: "+err));
+  .catch(err=>alert("Network error"));
 }
 
-// Refresh products
 function refreshProducts(){
   loadProducts();
 }
 
-// Initial load
 loadSettings();
 loadProducts();
 
-// PWA support
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js');
 }
